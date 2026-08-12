@@ -9,12 +9,17 @@ struct RootView: View {
                 switch store.state {
                 case .idle, .loading:
                     ProgressView("正在读取健康数据…")
-                case .unavailable(let message):
-                    ContentUnavailableView(
-                        "需要健康数据权限",
-                        systemImage: "heart.text.square",
-                        description: Text(message)
-                    )
+                case .unavailable:
+                    ContentUnavailableView {
+                        Label("需要健康数据权限", systemImage: "heart.text.square")
+                    } description: {
+                        Text("无法读取健康数据。请在“设置”中允许此 App 读取体能训练数据。")
+                    } actions: {
+                        Button("重试") {
+                            Task { await store.load() }
+                        }
+                        .buttonStyle(.borderedProminent)
+                    }
                 case .loaded where store.runs.isEmpty:
                     ContentUnavailableView(
                         "没有户外跑步数据",

@@ -10,12 +10,28 @@ struct HeartRateZonesCardView: View {
     @State private var selectedWorkoutID: UUID?
     @State private var chartHeartRatePoints: [ZoneHeartRatePoint] = []
 
-    private enum Period: Int, CaseIterable, Identifiable {
-        case sevenDays = 7
-        case thirtyDays = 30
+    private enum Period: CaseIterable, Identifiable {
+        case sevenDays
+        case thirtyDays
+        case all
 
-        var id: Int { rawValue }
-        var title: String { "\(rawValue)天" }
+        var id: Self { self }
+
+        var title: LocalizedStringResource {
+            switch self {
+            case .sevenDays: "7天"
+            case .thirtyDays: "30天"
+            case .all: "全部"
+            }
+        }
+
+        var dayCount: Int? {
+            switch self {
+            case .sevenDays: 7
+            case .thirtyDays: 30
+            case .all: nil
+            }
+        }
     }
 
     private struct ZoneSummary: Identifiable {
@@ -33,6 +49,7 @@ struct HeartRateZonesCardView: View {
         let workoutSeriesID: String
         let workoutDate: Date
         let elapsedSeconds: Int
+        let workoutElapsedSeconds: Int
         let heartRateBPM: Double
         let isHighlighted: Bool
         let highlightSeriesID: String?
@@ -130,9 +147,10 @@ struct HeartRateZonesCardView: View {
     }
 
     private var periodRuns: [OutdoorRun] {
+        guard let dayCount = period.dayCount else { return runs }
         let calendar = Calendar.current
         let today = calendar.startOfDay(for: Date())
-        guard let start = calendar.date(byAdding: .day, value: -(period.rawValue - 1), to: today),
+        guard let start = calendar.date(byAdding: .day, value: -(dayCount - 1), to: today),
               let end = calendar.date(byAdding: .day, value: 1, to: today) else { return [] }
         return runs.filter { $0.startDate >= start && $0.startDate < end }
     }
@@ -329,10 +347,16 @@ struct HeartRateZonesCardView: View {
                                 Spacer(minLength: 12)
 
                                 if let point {
-                                    Text("\(Int(point.heartRateBPM.rounded())) bpm")
-                                        .font(.caption.weight(.semibold))
-                                        .foregroundStyle(.secondary)
-                                        .monospacedDigit()
+                                    HStack(spacing: 10) {
+                                        Text(elapsedTime(point.workoutElapsedSeconds))
+                                            .font(.caption)
+                                            .foregroundStyle(.secondary)
+
+                                        Text("\(Int(point.heartRateBPM.rounded())) bpm")
+                                            .font(.caption.weight(.semibold))
+                                            .foregroundStyle(.secondary)
+                                    }
+                                    .monospacedDigit()
                                 } else if selectedHeartRateSeconds != nil {
                                     Text("—")
                                         .font(.caption)
@@ -364,6 +388,7 @@ struct HeartRateZonesCardView: View {
         for run in periodRuns.sorted(by: { $0.startDate < $1.startDate }) {
             let zone = run.heartRateZones.first { $0.index == selectedZone }
             let workoutSeriesID = run.id.uuidString
+            let workoutElapsedSecondsByChartSecond = elapsedSecondsMapping(for: run)
             var highlightSegment = 0
             var previousWasHighlighted = false
 
@@ -382,6 +407,8 @@ struct HeartRateZonesCardView: View {
                     workoutSeriesID: workoutSeriesID,
                     workoutDate: run.startDate,
                     elapsedSeconds: sample.elapsedSeconds,
+                    workoutElapsedSeconds: workoutElapsedSecondsByChartSecond[sample.elapsedSeconds]
+                        ?? sample.elapsedSeconds,
                     heartRateBPM: sample.averageBPM,
                     isHighlighted: highlighted,
                     highlightSeriesID: highlightSeriesID
@@ -396,7 +423,7 @@ struct HeartRateZonesCardView: View {
         for run: OutdoorRun,
         zone: WorkoutHeartRateZone?
     ) -> [MinuteHeartRate] {
-        let samples = run.minuteHeartRateData.sorted { $0.elapsedSeconds < $1.elapsedSeconds }
+        let samples = contiguousHeartRateSamples(for: run)
         let maximumBasePoints = 96
         guard samples.count > maximumBasePoints else { return samples }
 
@@ -422,8 +449,23 @@ struct HeartRateZonesCardView: View {
         return retainedIndices.sorted().map { samples[$0] }
     }
 
+    private func contiguousHeartRateSamples(for run: OutdoorRun) -> [MinuteHeartRate] {
+        run.minuteHeartRateData
+            .sorted { $0.elapsedSeconds < $1.elapsedSeconds }
+            .enumerated()
+            .map { index, sample in
+                MinuteHeartRate(
+                    workoutID: sample.workoutID,
+                    elapsedSeconds: index * 10,
+                    minimumBPM: sample.minimumBPM,
+                    maximumBPM: sample.maximumBPM,
+                    averageBPM: sample.averageBPM
+                )
+            }
+    }
+
     private var longestRunSeconds: Int {
-        max(10, periodRuns.compactMap { $0.minuteHeartRateData.last?.elapsedSeconds }.max() ?? 10)
+        max(10, periodRuns.compactMap { contiguousHeartRateSamples(for: $0).last?.elapsedSeconds }.max() ?? 10)
     }
 
     private var timelineRuns: [OutdoorRun] {
@@ -443,8 +485,9 @@ struct HeartRateZonesCardView: View {
     private var selectedHeartRatePoints: [ZoneHeartRatePoint] {
         guard let selectedHeartRateSeconds else { return [] }
         return timelineRuns.compactMap { run in
+            let workoutElapsedSecondsByChartSecond = elapsedSecondsMapping(for: run)
             guard let sample = closestHeartRateSample(
-                in: run.minuteHeartRateData,
+                in: contiguousHeartRateSamples(for: run),
                 to: selectedHeartRateSeconds
             ) else { return nil }
 
@@ -454,11 +497,22 @@ struct HeartRateZonesCardView: View {
                 workoutSeriesID: run.id.uuidString,
                 workoutDate: run.startDate,
                 elapsedSeconds: sample.elapsedSeconds,
+                workoutElapsedSeconds: workoutElapsedSecondsByChartSecond[sample.elapsedSeconds]
+                    ?? sample.elapsedSeconds,
                 heartRateBPM: sample.averageBPM,
                 isHighlighted: false,
                 highlightSeriesID: nil
             )
         }
+    }
+
+    private func elapsedSecondsMapping(for run: OutdoorRun) -> [Int: Int] {
+        Dictionary(
+            uniqueKeysWithValues: run.minuteHeartRateData
+                .sorted { $0.elapsedSeconds < $1.elapsedSeconds }
+                .enumerated()
+                .map { index, sample in (index * 10, sample.elapsedSeconds) }
+        )
     }
 
     private func closestHeartRateSample(
@@ -494,7 +548,7 @@ struct HeartRateZonesCardView: View {
         guard let run = timelineRuns.first(where: { $0.id == workoutID }),
               let zone = run.heartRateZones.first(where: { $0.index == index }) else { return nil }
 
-        return run.minuteHeartRateData
+        return contiguousHeartRateSamples(for: run)
             .last(where: { contains($0.averageBPM, in: zone) })?
             .elapsedSeconds
     }
@@ -533,11 +587,21 @@ struct HeartRateZonesCardView: View {
     }
 
     private func minutes(_ value: Double) -> String {
-        String(format: "%.1f 分钟", value)
+        L10n.string("\(value, format: .number.precision(.fractionLength(1))) 分钟")
+    }
+
+    private func elapsedTime(_ seconds: Int) -> String {
+        let hours = seconds / 3_600
+        let minutes = (seconds % 3_600) / 60
+        let remainingSeconds = seconds % 60
+        if hours > 0 {
+            return String(format: "%d:%02d:%02d", hours, minutes, remainingSeconds)
+        }
+        return String(format: "%d:%02d", minutes, remainingSeconds)
     }
 
     private func runDate(_ date: Date) -> String {
-        date.formatted(.dateTime.month().day().weekday(.abbreviated).hour().minute())
+        MetricFormatter.monthDayWeekdayTime(date)
     }
 
     private func latestRangeLabel(zone index: Int, in runs: [OutdoorRun]) -> String {
@@ -548,17 +612,17 @@ struct HeartRateZonesCardView: View {
                 break
             }
         }
-        guard let value = latestValue else { return "Apple 区间" }
+        guard let value = latestValue else { return L10n.string("Apple 区间") }
 
         switch (value.minimumBPM, value.maximumBPM) {
         case let (minimum?, maximum?):
             return "\(Int(minimum.rounded()))–\(Int(maximum.rounded())) bpm"
         case let (minimum?, nil):
-            return "\(Int(minimum.rounded())) bpm 以上"
+            return L10n.string("\(Int(minimum.rounded())) bpm 以上")
         case let (nil, maximum?):
-            return "低于 \(Int(maximum.rounded())) bpm"
+            return L10n.string("低于 \(Int(maximum.rounded())) bpm")
         case (nil, nil):
-            return "Apple 区间"
+            return L10n.string("Apple 区间")
         }
     }
 }

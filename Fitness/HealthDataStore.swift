@@ -6,7 +6,7 @@ final class HealthDataStore: ObservableObject {
         case idle
         case loading
         case loaded
-        case unavailable(String)
+        case unavailable
     }
 
     @Published private(set) var state: State = .idle
@@ -43,14 +43,9 @@ final class HealthDataStore: ObservableObject {
             await cache.save(refreshedRuns)
         } catch {
             if cached == nil {
-                state = .unavailable("无法读取健康数据。请在“设置”中允许此 App 读取体能训练数据。")
+                state = .unavailable
             }
         }
-    }
-
-    func retry() async {
-        hasLoaded = false
-        await load()
     }
 }
 
@@ -61,22 +56,16 @@ private actor ProcessedRunCache {
     }
 
     private struct Payload: Codable {
-        let version: Int
         let savedAt: Date
         let runs: [OutdoorRun]
     }
 
-    private let version = 14
     private let freshnessInterval: TimeInterval = 15 * 60
 
     func load() -> Snapshot? {
-        for url in legacyCacheURLs {
-            try? FileManager.default.removeItem(at: url)
-        }
         do {
             let data = try Data(contentsOf: cacheURL)
             let payload = try JSONDecoder().decode(Payload.self, from: data)
-            guard payload.version == version else { return nil }
             return Snapshot(
                 runs: payload.runs,
                 isFresh: Date().timeIntervalSince(payload.savedAt) < freshnessInterval
@@ -93,7 +82,7 @@ private actor ProcessedRunCache {
                 at: cacheURL.deletingLastPathComponent(),
                 withIntermediateDirectories: true
             )
-            let payload = Payload(version: version, savedAt: Date(), runs: runs)
+            let payload = Payload(savedAt: Date(), runs: runs)
             let data = try JSONEncoder().encode(payload)
             try data.write(
                 to: cacheURL,
@@ -107,14 +96,6 @@ private actor ProcessedRunCache {
     private var cacheURL: URL {
         FileManager.default
             .urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-            .appendingPathComponent("ProcessedOutdoorRuns-v14.json", isDirectory: false)
-    }
-
-    private var legacyCacheURLs: [URL] {
-        let directory = FileManager.default
-            .urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-        return [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13].map {
-            directory.appendingPathComponent("ProcessedOutdoorRuns-v\($0).json", isDirectory: false)
-        }
+            .appendingPathComponent("ProcessedOutdoorRuns.json", isDirectory: false)
     }
 }

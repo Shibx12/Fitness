@@ -16,11 +16,16 @@
 		A10000000000000000000008 /* OutdoorRunAnalyticsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000008 /* OutdoorRunAnalyticsView.swift */; };
 		A10000000000000000000009 /* PaceCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000009 /* PaceCardView.swift */; };
 		A1000000000000000000000C /* CadenceCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000000000000000000000C /* CadenceCardView.swift */; };
-		A10000000000000000000011 /* RunningEfficiencyCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000014 /* RunningEfficiencyCardView.swift */; };
-		A10000000000000000000012 /* HeartRateZonesCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000015 /* HeartRateZonesCardView.swift */; };
 		A1000000000000000000000D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = B1000000000000000000000D /* Assets.xcassets */; };
 		A1000000000000000000000E /* HealthKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B10000000000000000000010 /* HealthKit.framework */; };
 		A1000000000000000000000F /* Charts.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B10000000000000000000011 /* Charts.framework */; };
+		A10000000000000000000011 /* RunningEfficiencyCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000014 /* RunningEfficiencyCardView.swift */; };
+		A10000000000000000000012 /* HeartRateZonesCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000015 /* HeartRateZonesCardView.swift */; };
+		A10000000000000000000013 /* OutdoorRunSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000016 /* OutdoorRunSupport.swift */; };
+		A10000000000000000000014 /* AnalyticsComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000017 /* AnalyticsComponents.swift */; };
+		A10000000000000000000015 /* Localization.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000018 /* Localization.swift */; };
+		A10000000000000000000016 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000019 /* Localizable.xcstrings */; };
+		A10000000000000000000017 /* InfoPlist.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = B1000000000000000000001A /* InfoPlist.xcstrings */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -41,6 +46,11 @@
 		B10000000000000000000012 /* Fitness.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Fitness.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		B10000000000000000000014 /* RunningEfficiencyCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunningEfficiencyCardView.swift; sourceTree = "<group>"; };
 		B10000000000000000000015 /* HeartRateZonesCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HeartRateZonesCardView.swift; sourceTree = "<group>"; };
+		B10000000000000000000016 /* OutdoorRunSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OutdoorRunSupport.swift; sourceTree = "<group>"; };
+		B10000000000000000000017 /* AnalyticsComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalyticsComponents.swift; sourceTree = "<group>"; };
+		B10000000000000000000018 /* Localization.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Localization.swift; sourceTree = "<group>"; };
+		B10000000000000000000019 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
+		B1000000000000000000001A /* InfoPlist.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = InfoPlist.xcstrings; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -79,6 +89,11 @@
 				B1000000000000000000000C /* CadenceCardView.swift */,
 				B10000000000000000000014 /* RunningEfficiencyCardView.swift */,
 				B10000000000000000000015 /* HeartRateZonesCardView.swift */,
+				B10000000000000000000016 /* OutdoorRunSupport.swift */,
+				B10000000000000000000017 /* AnalyticsComponents.swift */,
+				B10000000000000000000018 /* Localization.swift */,
+				B10000000000000000000019 /* Localizable.xcstrings */,
+				B1000000000000000000001A /* InfoPlist.xcstrings */,
 				B1000000000000000000000D /* Assets.xcassets */,
 				B1000000000000000000000E /* Info.plist */,
 				B1000000000000000000000F /* Fitness.entitlements */,
@@ -140,7 +155,7 @@
 			};
 			buildConfigurationList = F10000000000000000000001 /* Build configuration list for PBXProject "Fitness" */;
 			compatibilityVersion = "Xcode 16.0";
-			developmentRegion = en;
+			developmentRegion = "zh-Hans";
 			hasScannedForEncodings = 0;
 			knownRegions = (
 				en,
@@ -163,6 +178,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				A1000000000000000000000D /* Assets.xcassets in Resources */,
+				A10000000000000000000016 /* Localizable.xcstrings in Resources */,
+				A10000000000000000000017 /* InfoPlist.xcstrings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -184,6 +201,9 @@
 				A1000000000000000000000C /* CadenceCardView.swift in Sources */,
 				A10000000000000000000011 /* RunningEfficiencyCardView.swift in Sources */,
 				A10000000000000000000012 /* HeartRateZonesCardView.swift in Sources */,
+				A10000000000000000000013 /* OutdoorRunSupport.swift in Sources */,
+				A10000000000000000000014 /* AnalyticsComponents.swift in Sources */,
+				A10000000000000000000015 /* Localization.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

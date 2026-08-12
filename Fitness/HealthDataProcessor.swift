@@ -74,17 +74,17 @@ enum HealthDataProcessor {
 
         let intervalSeconds: TimeInterval = 10
         let intervalCount = Int(ceil(workoutEnd.timeIntervalSince(workoutStart) / intervalSeconds))
+        let valuesByInterval = Dictionary(grouping: validSamples) { sample in
+            Int(sample.startDate.timeIntervalSince(workoutStart) / intervalSeconds)
+        }.mapValues { intervalSamples in
+            intervalSamples.map { $0.quantity.doubleValue(for: bpm) }
+        }
         var result: [MinuteHeartRate] = []
 
         for interval in 0..<intervalCount {
             let intervalStart = workoutStart.addingTimeInterval(Double(interval) * intervalSeconds)
             let intervalEnd = min(intervalStart.addingTimeInterval(intervalSeconds), workoutEnd)
-            let samplesInInterval = validSamples.filter { sample in
-                sample.startDate >= intervalStart && sample.startDate < intervalEnd
-            }
-            let values = samplesInInterval.map { sample in
-                sample.quantity.doubleValue(for: bpm)
-            }
+            let values = valuesByInterval[interval] ?? []
 
             if let minimum = values.min(), let maximum = values.max() {
                 result.append(MinuteHeartRate(
@@ -196,38 +196,44 @@ enum HealthDataProcessor {
     ) -> [MinuteCadence] {
         let completeMinutes = max(0, Int(workoutEnd.timeIntervalSince(workoutStart) / 60))
         guard completeMinutes > 0 else { return [] }
-        let samples = unique(samples)
-        var values: [MinuteCadence] = []
+        let completeWorkoutEnd = workoutStart.addingTimeInterval(Double(completeMinutes) * 60)
+        var stepsByMinute = Array(repeating: 0.0, count: completeMinutes)
+        var measuredMinutes = Set<Int>()
 
-        for minute in 0..<completeMinutes {
-            let bucketStart = workoutStart.addingTimeInterval(Double(minute) * 60)
-            let bucketEnd = bucketStart.addingTimeInterval(60)
-            var steps = 0.0
-            var hasMeasurement = false
+        for sample in unique(samples) {
+            let sampleDuration = sample.endDate.timeIntervalSince(sample.startDate)
+            guard sampleDuration > 0 else { continue }
+            let sampleStart = max(sample.startDate, workoutStart)
+            let sampleEnd = min(sample.endDate, completeWorkoutEnd)
+            guard sampleEnd > sampleStart else { continue }
 
-            for sample in samples {
+            let firstMinute = max(0, Int(sampleStart.timeIntervalSince(workoutStart) / 60))
+            let lastMinute = min(
+                completeMinutes - 1,
+                Int(ceil(sampleEnd.timeIntervalSince(workoutStart) / 60)) - 1
+            )
+            guard firstMinute <= lastMinute else { continue }
+
+            for minute in firstMinute...lastMinute {
+                let bucketStart = workoutStart.addingTimeInterval(Double(minute) * 60)
+                let bucketEnd = bucketStart.addingTimeInterval(60)
                 let overlapStart = max(bucketStart, sample.startDate)
                 let overlapEnd = min(bucketEnd, sample.endDate)
                 guard overlapEnd > overlapStart else { continue }
-                let duration = sample.endDate.timeIntervalSince(sample.startDate)
-                guard duration > 0 else { continue }
 
-                // Step samples can span several workout-relative minutes. Allocate
-                // counts proportionally by temporal overlap instead of by wall clock.
-                let overlapRatio = overlapEnd.timeIntervalSince(overlapStart) / duration
-                steps += sample.quantity.doubleValue(for: .count()) * overlapRatio
-                hasMeasurement = true
-            }
-
-            if hasMeasurement {
-                values.append(MinuteCadence(
-                    workoutID: workoutID,
-                    elapsedMinute: minute + 1,
-                    stepsPerMinute: steps
-                ))
+                let overlapRatio = overlapEnd.timeIntervalSince(overlapStart) / sampleDuration
+                stepsByMinute[minute] += sample.quantity.doubleValue(for: .count()) * overlapRatio
+                measuredMinutes.insert(minute)
             }
         }
-        return values
+
+        return measuredMinutes.sorted().map { minute in
+            MinuteCadence(
+                workoutID: workoutID,
+                elapsedMinute: minute + 1,
+                stepsPerMinute: stepsByMinute[minute]
+            )
+        }
     }
 
     private static func unique(_ samples: [HKQuantitySample]) -> [HKQuantitySample] {
@@ -425,9 +431,16 @@ enum HealthDataProcessor {
         unit: HKUnit,
         maximumGap: TimeInterval
     ) -> Double? {
-        let previous = samples.last { $0.startDate <= target }
-        let next = samples.first { $0.startDate >= target }
-        guard let previous, let next, previous.uuid != next.uuid else { return nil }
+        let nextIndex = firstSampleIndex(atOrAfter: target, in: samples)
+        let previousIndex = nextIndex < samples.count && samples[nextIndex].startDate == target
+            ? nextIndex
+            : nextIndex - 1
+        guard samples.indices.contains(previousIndex), samples.indices.contains(nextIndex) else {
+            return nil
+        }
+        let previous = samples[previousIndex]
+        let next = samples[nextIndex]
+        guard previous.uuid != next.uuid else { return nil }
 
         let interval = next.startDate.timeIntervalSince(previous.startDate)
         // Never draw a synthetic slope across a long Watch sampling gap. Thirty
@@ -438,5 +451,22 @@ enum HealthDataProcessor {
         let previousBPM = previous.quantity.doubleValue(for: unit)
         let nextBPM = next.quantity.doubleValue(for: unit)
         return previousBPM + ((nextBPM - previousBPM) * fraction)
+    }
+
+    private static func firstSampleIndex(
+        atOrAfter target: Date,
+        in samples: [HKQuantitySample]
+    ) -> Int {
+        var lower = 0
+        var upper = samples.count
+        while lower < upper {
+            let middle = lower + (upper - lower) / 2
+            if samples[middle].startDate < target {
+                lower = middle + 1
+            } else {
+                upper = middle
+            }
+        }
+        return lower
     }
 }

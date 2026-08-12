@@ -52,7 +52,7 @@ struct RunningEfficiencyCardView: View {
                         AxisMarks(values: .automatic(desiredCount: 4)) { value in
                             AxisValueLabel {
                                 if let date = value.as(Date.self) {
-                                    Text(date.formatted(.dateTime.month().day()))
+                                    Text(MetricFormatter.monthDay(date))
                                         .foregroundStyle(Color(.systemGray2))
                                 }
                             }
@@ -106,7 +106,7 @@ struct RunningEfficiencyCardView: View {
     private func detail(for value: RunningEfficiency) -> String {
         guard let speed = value.averageSpeedKilometersPerHour,
               let heartRate = value.averageHeartRateBPM else {
-            return "心率或速度数据不足"
+            return L10n.string("心率或速度数据不足")
         }
         return String(format: "%.1f km/h · %.0f bpm", speed, heartRate)
     }
