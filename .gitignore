@@ -1,0 +1,7 @@
+.DS_Store
+DerivedData/
+*.xcresult
+*.xccovarchive
+*.xccovreport
+Fitness.xcodeproj/xcuserdata/
+Fitness.xcodeproj/project.xcworkspace/xcuserdata/

@@ -1,28 +1,22 @@
 {
   "sourceLanguage" : "zh-Hans",
   "strings" : {
-    "—" : {
+    "%@ · %@" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "—"
+            "value" : "%1$@ · %2$@"
           }
         }
       }
     },
-    "%@ · 中位时长 %@ · %@" : {
+    "%@ · 累计 %@ · %@" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%1$@ · Median duration %2$@ · %3$@"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "%1$@ · 中位时长 %2$@ · %3$@"
+            "value" : "%1$@ · Total %2$@ · %3$@"
           }
         }
       }
@@ -63,6 +57,16 @@
         }
       }
     },
+    "%@，%@，%@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@, %2$@, %3$@"
+          }
+        }
+      }
+    },
     "%@步频" : {
       "localizations" : {
         "en" : {
@@ -79,16 +83,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%@ Pace"
-          }
-        }
-      }
-    },
-    "%lld bpm" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%lld bpm"
           }
         }
       }
@@ -135,6 +129,16 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "%1$lld 小时 %2$lld 分钟"
+          }
+        }
+      }
+    },
+    "%lld 次跑步没有可用的 Apple Watch 心率区间数据" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld runs have no Apple Watch heart rate zone data available"
           }
         }
       }
@@ -241,12 +245,52 @@
         }
       }
     },
+    "全部跑量" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Total Distance"
+          }
+        }
+      }
+    },
     "公里" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "km"
+          }
+        }
+      }
+    },
+    "共 %lld 个一公里分段" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld one-kilometer splits"
+          }
+        }
+      }
+    },
+    "共 %lld 个分钟数据点" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld minute data points"
+          }
+        }
+      }
+    },
+    "共 %lld 次跑步" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld runs"
           }
         }
       }
@@ -267,6 +311,37 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Fastest Pace"
+          }
+        }
+      }
+    },
+    "最近一次跑步" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Latest Run"
+          }
+        }
+      }
+    },
+    "最近一次跑步没有可同时显示的心率和配速数据" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The latest run has no heart rate and pace data that can be shown together"
+          }
+        }
+      }
+    },
+    "最近一次跑步的心率与配速图表" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Heart rate and pace chart for the latest run"
           }
         }
       }
@@ -321,12 +396,32 @@
         }
       }
     },
+    "刷新" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Refresh"
+          }
+        }
+      }
+    },
+    "刷新跑步数据" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Refresh running data"
+          }
+        }
+      }
+    },
     "区间心率" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Zone Heart Rate"
+            "value" : "Zone heart rate"
           }
         }
       }
@@ -336,7 +431,17 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Zone Segment"
+            "value" : "Zone segment"
+          }
+        }
+      }
+    },
+    "区间边界因跑步而异" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zone boundaries vary between runs"
           }
         }
       }
@@ -381,6 +486,16 @@
         }
       }
     },
+    "好" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "OK"
+          }
+        }
+      }
+    },
     "完成" : {
       "localizations" : {
         "en" : {
@@ -397,6 +512,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Run completed"
+          }
+        }
+      }
+    },
+    "已选择" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Selected"
           }
         }
       }
@@ -451,6 +576,9 @@
         }
       }
     },
+    "心率分段" : {
+
+    },
     "心率区间" : {
       "localizations" : {
         "en" : {
@@ -471,6 +599,16 @@
         }
       }
     },
+    "心率时间线" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Heart rate timeline"
+          }
+        }
+      }
+    },
     "户外跑步" : {
       "localizations" : {
         "en" : {
@@ -481,12 +619,28 @@
         }
       }
     },
-    "户外跑步数据" : {
+    "所选值" : {
+
+    },
+    "所选时间" : {
+
+    },
+    "所选跑步的 Apple Watch 区间边界或配置存在变化" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Outdoor Running Data"
+            "value" : "Apple Watch zone boundaries or configurations vary across the selected runs"
+          }
+        }
+      }
+    },
+    "无法导出跑步数据" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unable to Export Running Data"
           }
         }
       }
@@ -511,16 +665,6 @@
         }
       }
     },
-    "日期未知" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Unknown date"
-          }
-        }
-      }
-    },
     "时:分" : {
       "localizations" : {
         "en" : {
@@ -541,6 +685,36 @@
         }
       }
     },
+    "时间 %@，心率 %@" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "时间 %1$@，心率 %2$@"
+          }
+        }
+      }
+    },
+    "时间 %@，海拔 %@" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "时间 %1$@，海拔 %2$@"
+          }
+        }
+      }
+    },
+    "时间 %@，配速 %@" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "时间 %1$@，配速 %2$@"
+          }
+        }
+      }
+    },
     "时间范围" : {
       "localizations" : {
         "en" : {
@@ -551,12 +725,32 @@
         }
       }
     },
+    "显示的是上次成功同步的数据。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Showing data from the last successful sync."
+          }
+        }
+      }
+    },
     "未跑步" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "No run"
+          }
+        }
+      }
+    },
+    "未选择" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not selected"
           }
         }
       }
@@ -591,22 +785,41 @@
         }
       }
     },
+    "标准化心率" : {
+
+    },
+    "标准化海拔" : {
+
+    },
+    "标准化配速" : {
+
+    },
+    "正在刷新跑步数据" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Refreshing running data"
+          }
+        }
+      }
+    },
+    "正在导出跑步数据" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Exporting running data"
+          }
+        }
+      }
+    },
     "正在读取健康数据…" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Loading Health data…"
-          }
-        }
-      }
-    },
-    "此时间范围内没有 Apple 心率区间数据" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "No Apple heart rate zone data for this time range"
           }
         }
       }
@@ -621,12 +834,43 @@
         }
       }
     },
+    "此跑步没有可用的 Apple Watch 心率区间数据" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This run has no Apple Watch heart rate zone data available"
+          }
+        }
+      }
+    },
+    "步幅" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stride Length"
+          }
+        }
+      }
+    },
     "步频" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Cadence"
+          }
+        }
+      }
+    },
+    "步频图表" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cadence chart"
           }
         }
       }
@@ -671,13 +915,28 @@
         }
       }
     },
-    "设置" : {
-      "extractionState" : "stale",
+    "海拔" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Settings"
+            "value" : "Elevation"
+          }
+        }
+      }
+    },
+    "海拔分段" : {
+
+    },
+    "秒" : {
+
+    },
+    "请稍后重试。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Please try again later."
           }
         }
       }
@@ -698,6 +957,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Running Efficiency"
+          }
+        }
+      }
+    },
+    "跑步效率图表" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Running efficiency chart"
           }
         }
       }
@@ -758,6 +1027,19 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Pace (minutes)"
+          }
+        }
+      }
+    },
+    "配速分段" : {
+
+    },
+    "配速图表" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pace chart"
           }
         }
       }

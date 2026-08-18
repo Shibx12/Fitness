@@ -44,13 +44,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Read your outdoor runs, distance, speed, heart rate, and steps to show historical running analysis."
+            "value" : "Read selected outdoor runs and their distance, speed, heart rate, steps, energy, running dynamics, workout events, and routes for analysis and user-initiated export."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "new",
-            "value" : "读取您的户外跑步、距离、速度、心率和步数，以显示历史跑步分析。"
+            "value" : "读取您选择的户外跑步及其距离、速度、心率、步数、能量、跑步动态、训练事件和路线，用于显示跑步分析并由您主动导出。"
           }
         }
       }

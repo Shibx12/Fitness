@@ -24,15 +24,16 @@ struct RunningEfficiencyCardView: View {
     }
 
     var body: some View {
+        let chartPoints = points
         AnalyticsCard(title: "跑步效率") {
-            if points.isEmpty {
+            if chartPoints.isEmpty {
                 Text("没有足够的心率和速度数据")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity, minHeight: 120)
             } else {
                 ZStack(alignment: .top) {
-                    Chart(points) { point in
+                    Chart(chartPoints) { point in
                         LineMark(
                             x: .value("日期", point.date),
                             y: .value("跑步效率", point.value)
@@ -47,7 +48,7 @@ struct RunningEfficiencyCardView: View {
                         .foregroundStyle(healthOrange)
                         .symbolSize(48)
                     }
-                    .chartYScale(domain: efficiencyDomain)
+                    .chartYScale(domain: efficiencyDomain(for: chartPoints))
                     .chartXAxis {
                         AxisMarks(values: .automatic(desiredCount: 4)) { value in
                             AxisValueLabel {
@@ -70,8 +71,11 @@ struct RunningEfficiencyCardView: View {
                         }
                     }
                     .chartXSelection(value: $selectedDate)
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel("跑步效率图表")
+                    .accessibilityValue("共 \(chartPoints.count) 次跑步")
 
-                    if let selectedPoint {
+                    if let selectedPoint = selectedPoint(in: chartPoints) {
                         ChartTooltip(
                             title: MetricFormatter.date(selectedPoint.date),
                             value: efficiency(selectedPoint.value),
@@ -84,7 +88,7 @@ struct RunningEfficiencyCardView: View {
         }
     }
 
-    private var selectedPoint: EfficiencyPoint? {
+    private func selectedPoint(in points: [EfficiencyPoint]) -> EfficiencyPoint? {
         guard let selectedDate else { return nil }
         return points.min {
             abs($0.date.timeIntervalSince(selectedDate))
@@ -92,7 +96,7 @@ struct RunningEfficiencyCardView: View {
         }
     }
 
-    private var efficiencyDomain: ClosedRange<Double> {
+    private func efficiencyDomain(for points: [EfficiencyPoint]) -> ClosedRange<Double> {
         guard let minimum = points.map(\.value).min(),
               let maximum = points.map(\.value).max() else { return 0...1 }
         let span = max(0.002, maximum - minimum)

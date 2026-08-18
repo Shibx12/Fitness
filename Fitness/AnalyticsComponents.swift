@@ -1,5 +1,34 @@
 import SwiftUI
 
+enum ChartWindow {
+    static func range(
+        itemCount: Int,
+        visibleCount: Int,
+        scrollPosition: Int,
+        padding: Int
+    ) -> Range<Int> {
+        guard itemCount > 0 else { return 0..<0 }
+        guard itemCount > visibleCount else { return 0..<itemCount }
+        let anchor = min(max(0, scrollPosition), itemCount - 1)
+        let desiredCount = min(itemCount, visibleCount + padding * 2)
+        let lower = min(max(0, anchor - padding), itemCount - desiredCount)
+        return lower..<(lower + desiredCount)
+    }
+}
+
+enum ElevationTimeline {
+    static func samplesForChart(
+        _ samples: [ElevationTimelineSample],
+        maximumCount: Int = 600
+    ) -> [ElevationTimelineSample] {
+        guard maximumCount >= 2, samples.count > maximumCount else { return samples }
+        let step = Double(samples.count - 1) / Double(maximumCount - 1)
+        return (0..<maximumCount).map { index in
+            samples[Int((Double(index) * step).rounded())]
+        }
+    }
+}
+
 struct AnalyticsCard<Content: View>: View {
     let title: LocalizedStringResource
     let content: Content
@@ -72,16 +101,6 @@ enum MetricFormatter {
         )
     }
 
-    static func dateRange(workoutIDs: [UUID], dates: [UUID: Date]) -> String {
-        let values = workoutIDs.compactMap { dates[$0] }.sorted()
-        guard let first = values.first, let last = values.last else {
-            return L10n.string("日期未知")
-        }
-        if Calendar.current.isDate(first, inSameDayAs: last) {
-            return date(first)
-        }
-        return "\(date(first))–\(date(last))"
-    }
 }
 
 struct ChartTooltip: View {

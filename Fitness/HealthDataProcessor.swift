@@ -125,10 +125,12 @@ enum HealthDataProcessor {
         heartRateSamples: [HKQuantitySample],
         speedSamples: [HKQuantitySample],
         distanceSamples: [HKQuantitySample],
-        workoutEvents: [HKWorkoutEvent]
+        workoutEvents: [HKWorkoutEvent],
+        strideLengthSamples: [HKQuantitySample] = []
     ) -> (
         runningEfficiency: RunningEfficiency,
-        effectiveRunningHeartRates: [Double]
+        effectiveRunningHeartRates: [EffectiveRunningHeartRate],
+        runningTimeline: [RunningTimelineSample]
     ) {
         let intervalSeconds: TimeInterval = 10
         let prepared = preparedRunningPoints(
@@ -146,28 +148,84 @@ enum HealthDataProcessor {
         return (
             runningEfficiency: runningEfficiency(
                 prepared: prepared,
-                cleanedPoints: cleanedPoints,
-                intervalSeconds: intervalSeconds
+                cleanedPoints: cleanedPoints
             ),
-            effectiveRunningHeartRates: cleanedPoints.map(\.heartRateBPM)
+            effectiveRunningHeartRates: cleanedPoints.map {
+                EffectiveRunningHeartRate(
+                    elapsedSeconds: Int($0.elapsedSeconds.rounded()),
+                    beatsPerMinute: $0.heartRateBPM
+                )
+            },
+            runningTimeline: runningTimeline(
+                points: prepared.points,
+                workoutStart: workoutStart,
+                strideLengthSamples: strideLengthSamples
+            )
         )
+    }
+
+    private static func runningTimeline(
+        points: [RunningPoint],
+        workoutStart: Date,
+        strideLengthSamples: [HKQuantitySample]
+    ) -> [RunningTimelineSample] {
+        let strideUnit = HKUnit.meter()
+        let strides = unique(strideLengthSamples).sorted { $0.startDate < $1.startDate }
+        var strideCursor = 0
+        return points.map { point in
+            let intervalStart = workoutStart.addingTimeInterval(point.elapsedSeconds)
+            let intervalEnd = intervalStart.addingTimeInterval(point.duration)
+            while strideCursor < strides.count,
+                  strides[strideCursor].endDate <= intervalStart,
+                  strides[strideCursor].startDate < intervalStart {
+                strideCursor += 1
+            }
+            var intervalSamples: [HKQuantitySample] = []
+            var index = strideCursor
+            while index < strides.count, strides[index].startDate < intervalEnd {
+                intervalSamples.append(strides[index])
+                index += 1
+            }
+            let weightedStrides = intervalSamples.compactMap { sample -> (Double, TimeInterval)? in
+                let overlap = min(sample.endDate, intervalEnd)
+                    .timeIntervalSince(max(sample.startDate, intervalStart))
+                let value = sample.quantity.doubleValue(for: strideUnit)
+                guard overlap > 0, value.isFinite, value > 0 else { return nil }
+                return (value, overlap)
+            }
+            let pointStrides = intervalSamples.filter {
+                $0.startDate >= intervalStart && $0.startDate < intervalEnd
+            }.map { $0.quantity.doubleValue(for: strideUnit) }
+                .filter { $0.isFinite && $0 > 0 }
+            let stride = weightedMean(weightedStrides) ?? mean(pointStrides)
+            return RunningTimelineSample(
+                elapsedSeconds: Int(point.elapsedSeconds.rounded()),
+                heartRateBPM: point.heartRateBPM,
+                paceSecondsPerKilometer: 1_000 / point.speedMetersPerSecond,
+                strideLengthMeters: stride
+            )
+        }
     }
 
     private static func runningEfficiency(
         prepared: PreparedRunningPoints,
-        cleanedPoints: [RunningPoint],
-        intervalSeconds: TimeInterval
+        cleanedPoints: [RunningPoint]
     ) -> RunningEfficiency {
         guard prepared.hasSufficientCoverage else {
-            return .insufficient(effectiveDuration: Double(prepared.points.count) * intervalSeconds)
+            return .insufficient(
+                effectiveDuration: prepared.points.reduce(0) { $0 + $1.duration }
+            )
         }
 
-        let warmupIntervalCount = Int(120 / intervalSeconds)
-        let analysisPoints = Array(cleanedPoints.dropFirst(warmupIntervalCount))
-        let effectiveDuration = Double(analysisPoints.count) * intervalSeconds
+        let analysisPoints = cleanedPoints.filter { $0.elapsedSeconds >= 120 }
+        let effectiveDuration = analysisPoints.reduce(0) { $0 + $1.duration }
         guard analysisPoints.count >= 6,
-              let averageSpeedMetersPerSecond = mean(analysisPoints.map(\.speedMetersPerSecond)),
-              let averageHeartRate = mean(analysisPoints.map(\.heartRateBPM)),
+              let averageSpeedMetersPerSecond = weightedMean(
+                  analysisPoints.map { ($0.speedMetersPerSecond, $0.duration) }
+              ),
+              let averageHeartRate = weightedMean(
+                  analysisPoints.map { ($0.heartRateBPM, $0.duration) }
+              ),
               averageSpeedMetersPerSecond > 0,
               averageHeartRate > 0 else {
             return .insufficient(effectiveDuration: effectiveDuration)
@@ -192,13 +250,16 @@ enum HealthDataProcessor {
         workoutID: UUID,
         workoutStart: Date,
         workoutEnd: Date,
-        samples: [HKQuantitySample]
+        samples: [HKQuantitySample],
+        deduplicatedStepCounts: [Double?]
     ) -> [MinuteCadence] {
         let completeMinutes = max(0, Int(workoutEnd.timeIntervalSince(workoutStart) / 60))
         guard completeMinutes > 0 else { return [] }
         let completeWorkoutEnd = workoutStart.addingTimeInterval(Double(completeMinutes) * 60)
-        var stepsByMinute = Array(repeating: 0.0, count: completeMinutes)
-        var measuredMinutes = Set<Int>()
+        var coverageIntervalsByMinute = Array(
+            repeating: [DateInterval](),
+            count: completeMinutes
+        )
 
         for sample in unique(samples) {
             let sampleDuration = sample.endDate.timeIntervalSince(sample.startDate)
@@ -221,17 +282,23 @@ enum HealthDataProcessor {
                 let overlapEnd = min(bucketEnd, sample.endDate)
                 guard overlapEnd > overlapStart else { continue }
 
-                let overlapRatio = overlapEnd.timeIntervalSince(overlapStart) / sampleDuration
-                stepsByMinute[minute] += sample.quantity.doubleValue(for: .count()) * overlapRatio
-                measuredMinutes.insert(minute)
+                coverageIntervalsByMinute[minute].append(
+                    DateInterval(start: overlapStart, end: overlapEnd)
+                )
             }
         }
 
-        return measuredMinutes.sorted().map { minute in
-            MinuteCadence(
+        return coverageIntervalsByMinute.indices.compactMap { minute in
+            let measuredSeconds = mergedDuration(coverageIntervalsByMinute[minute])
+            guard measuredSeconds > 0,
+                  deduplicatedStepCounts.indices.contains(minute),
+                  let stepCount = deduplicatedStepCounts[minute],
+                  stepCount >= 0 else { return nil }
+            return MinuteCadence(
                 workoutID: workoutID,
                 elapsedMinute: minute + 1,
-                stepsPerMinute: stepsByMinute[minute]
+                stepsPerMinute: stepCount / measuredSeconds * 60,
+                coverage: measuredSeconds / 60
             )
         }
     }
@@ -242,6 +309,8 @@ enum HealthDataProcessor {
     }
 
     private struct RunningPoint {
+        let elapsedSeconds: TimeInterval
+        let duration: TimeInterval
         let speedMetersPerSecond: Double
         let heartRateBPM: Double
     }
@@ -282,6 +351,9 @@ enum HealthDataProcessor {
 
         var eligibleIntervalCount = 0
         var points: [RunningPoint] = []
+        var heartRateCursor = 0
+        var speedCursor = 0
+        var distanceCursor = 0
 
         for interval in 0..<intervalCount {
             let start = workoutStart.addingTimeInterval(Double(interval) * intervalSeconds)
@@ -290,21 +362,40 @@ enum HealthDataProcessor {
             eligibleIntervalCount += 1
 
             let target = start.addingTimeInterval(end.timeIntervalSince(start) / 2)
-            guard let heartRate = averageHeartRate(
-                from: heartRates,
+            let intervalHeartRates = samplesStarting(
+                in: heartRates,
                 start: start,
                 end: end,
+                cursor: &heartRateCursor
+            )
+            let intervalSpeeds = samplesOverlapping(
+                in: speeds,
+                start: start,
+                end: end,
+                cursor: &speedCursor
+            )
+            let intervalDistances = samplesOverlapping(
+                in: distances,
+                start: start,
+                end: end,
+                cursor: &distanceCursor
+            )
+            guard let heartRate = averageHeartRate(
+                from: intervalHeartRates,
+                allSamples: heartRates,
                 target: target,
                 unit: heartRateUnit
             ), let speed = averageSpeed(
-                from: speeds,
-                distanceSamples: distances,
+                from: intervalSpeeds,
+                distanceSamples: intervalDistances,
                 start: start,
                 end: end,
                 speedUnit: speedUnit
             ), (60...230).contains(heartRate), (1.0...8.0).contains(speed) else { continue }
 
             points.append(RunningPoint(
+                elapsedSeconds: start.timeIntervalSince(workoutStart),
+                duration: end.timeIntervalSince(start),
                 speedMetersPerSecond: speed,
                 heartRateBPM: heartRate
             ))
@@ -318,17 +409,20 @@ enum HealthDataProcessor {
 
     private static func averageHeartRate(
         from samples: [HKQuantitySample],
-        start: Date,
-        end: Date,
+        allSamples: [HKQuantitySample],
         target: Date,
         unit: HKUnit
     ) -> Double? {
         let values = samples
-            .filter { $0.startDate >= start && $0.startDate < end }
             .map { $0.quantity.doubleValue(for: unit) }
             .filter { (60...230).contains($0) }
         if let value = mean(values) { return value }
-        return interpolatedHeartRate(at: target, samples: samples, unit: unit, maximumGap: 30)
+        return interpolatedHeartRate(
+            at: target,
+            samples: allSamples,
+            unit: unit,
+            maximumGap: 30
+        )
     }
 
     private static func averageSpeed(
@@ -338,12 +432,17 @@ enum HealthDataProcessor {
         end: Date,
         speedUnit: HKUnit
     ) -> Double? {
-        let directValues = samples
-            .filter { $0.endDate > start && $0.startDate < end }
-            .map { $0.quantity.doubleValue(for: speedUnit) }
-            .filter { (1.0...8.0).contains($0) }
-        if let direct = mean(directValues) { return direct }
+        let weightedDirectValues = samples.compactMap { sample -> (Double, TimeInterval)? in
+            let overlapStart = max(start, sample.startDate)
+            let overlapEnd = min(end, sample.endDate)
+            let overlap = overlapEnd.timeIntervalSince(overlapStart)
+            let value = sample.quantity.doubleValue(for: speedUnit)
+            guard overlap > 0, (1.0...8.0).contains(value) else { return nil }
+            return (value, overlap)
+        }
+        if let direct = weightedMean(weightedDirectValues) { return direct }
 
+        var coverageIntervals: [DateInterval] = []
         let meters = distanceSamples.reduce(into: 0.0) { total, sample in
             let overlapStart = max(start, sample.startDate)
             let overlapEnd = min(end, sample.endDate)
@@ -351,10 +450,14 @@ enum HealthDataProcessor {
             guard overlapEnd > overlapStart, sampleDuration > 0 else { return }
             let overlap = overlapEnd.timeIntervalSince(overlapStart)
             total += sample.quantity.doubleValue(for: .meter()) * overlap / sampleDuration
+            coverageIntervals.append(DateInterval(start: overlapStart, end: overlapEnd))
         }
-        let duration = end.timeIntervalSince(start)
-        guard duration > 0, meters > 0 else { return nil }
-        return meters / duration
+        let coveredDuration = mergedDuration(coverageIntervals)
+        let intervalDuration = end.timeIntervalSince(start)
+        guard intervalDuration > 0,
+              coveredDuration / intervalDuration >= 0.5,
+              meters > 0 else { return nil }
+        return meters / coveredDuration
     }
 
     private static func pauseIntervals(
@@ -415,6 +518,30 @@ enum HealthDataProcessor {
         return values.reduce(0, +) / Double(values.count)
     }
 
+    private static func weightedMean(_ values: [(Double, TimeInterval)]) -> Double? {
+        let totalWeight = values.reduce(0) { $0 + max(0, $1.1) }
+        guard totalWeight > 0 else { return nil }
+        return values.reduce(0) { $0 + $1.0 * max(0, $1.1) } / totalWeight
+    }
+
+    private static func mergedDuration(_ intervals: [DateInterval]) -> TimeInterval {
+        let sorted = intervals.sorted { $0.start < $1.start }
+        guard var current = sorted.first else { return 0 }
+        var duration: TimeInterval = 0
+        for interval in sorted.dropFirst() {
+            if interval.start <= current.end {
+                current = DateInterval(
+                    start: current.start,
+                    end: max(current.end, interval.end)
+                )
+            } else {
+                duration += current.duration
+                current = interval
+            }
+        }
+        return duration + current.duration
+    }
+
     private static func median(_ values: [Double]) -> Double? {
         guard !values.isEmpty else { return nil }
         let sorted = values.sorted()
@@ -468,5 +595,37 @@ enum HealthDataProcessor {
             }
         }
         return lower
+    }
+
+    private static func samplesStarting(
+        in samples: [HKQuantitySample],
+        start: Date,
+        end: Date,
+        cursor: inout Int
+    ) -> [HKQuantitySample] {
+        while cursor < samples.count, samples[cursor].startDate < start {
+            cursor += 1
+        }
+        var upper = cursor
+        while upper < samples.count, samples[upper].startDate < end {
+            upper += 1
+        }
+        return Array(samples[cursor..<upper])
+    }
+
+    private static func samplesOverlapping(
+        in samples: [HKQuantitySample],
+        start: Date,
+        end: Date,
+        cursor: inout Int
+    ) -> [HKQuantitySample] {
+        while cursor < samples.count, samples[cursor].endDate <= start {
+            cursor += 1
+        }
+        var upper = cursor
+        while upper < samples.count, samples[upper].startDate < end {
+            upper += 1
+        }
+        return samples[cursor..<upper].filter { $0.endDate > start }
     }
 }

@@ -26,7 +26,20 @@
 		A10000000000000000000015 /* Localization.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000018 /* Localization.swift */; };
 		A10000000000000000000016 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000019 /* Localizable.xcstrings */; };
 		A10000000000000000000017 /* InfoPlist.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = B1000000000000000000001A /* InfoPlist.xcstrings */; };
+		A10000000000000000000018 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = B1000000000000000000001B /* PrivacyInfo.xcprivacy */; };
+		A10000000000000000000019 /* HeartRateZoneAnalytics.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000000000000000000001C /* HeartRateZoneAnalytics.swift */; };
+		A20000000000000000000001 /* ProductionSafetyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000001 /* ProductionSafetyTests.swift */; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		G20000000000000000000001 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = E10000000000000000000002 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = E10000000000000000000001;
+			remoteInfo = Fitness;
+		};
+/* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
 		B10000000000000000000001 /* FitnessApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FitnessApp.swift; sourceTree = "<group>"; };
@@ -51,6 +64,10 @@
 		B10000000000000000000018 /* Localization.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Localization.swift; sourceTree = "<group>"; };
 		B10000000000000000000019 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
 		B1000000000000000000001A /* InfoPlist.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = InfoPlist.xcstrings; sourceTree = "<group>"; };
+		B1000000000000000000001B /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		B1000000000000000000001C /* HeartRateZoneAnalytics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HeartRateZoneAnalytics.swift; sourceTree = "<group>"; };
+		B20000000000000000000001 /* ProductionSafetyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProductionSafetyTests.swift; sourceTree = "<group>"; };
+		B20000000000000000000002 /* FitnessTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = FitnessTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -63,6 +80,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		C20000000000000000000001 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -70,6 +94,7 @@
 			isa = PBXGroup;
 			children = (
 				D10000000000000000000002 /* Fitness */,
+				D20000000000000000000001 /* FitnessTests */,
 				D10000000000000000000003 /* Frameworks */,
 				D10000000000000000000004 /* Products */,
 			);
@@ -89,11 +114,13 @@
 				B1000000000000000000000C /* CadenceCardView.swift */,
 				B10000000000000000000014 /* RunningEfficiencyCardView.swift */,
 				B10000000000000000000015 /* HeartRateZonesCardView.swift */,
+				B1000000000000000000001C /* HeartRateZoneAnalytics.swift */,
 				B10000000000000000000016 /* OutdoorRunSupport.swift */,
 				B10000000000000000000017 /* AnalyticsComponents.swift */,
 				B10000000000000000000018 /* Localization.swift */,
 				B10000000000000000000019 /* Localizable.xcstrings */,
 				B1000000000000000000001A /* InfoPlist.xcstrings */,
+				B1000000000000000000001B /* PrivacyInfo.xcprivacy */,
 				B1000000000000000000000D /* Assets.xcassets */,
 				B1000000000000000000000E /* Info.plist */,
 				B1000000000000000000000F /* Fitness.entitlements */,
@@ -110,10 +137,19 @@
 			name = Frameworks;
 			sourceTree = "<group>";
 		};
+		D20000000000000000000001 /* FitnessTests */ = {
+			isa = PBXGroup;
+			children = (
+				B20000000000000000000001 /* ProductionSafetyTests.swift */,
+			);
+			path = FitnessTests;
+			sourceTree = "<group>";
+		};
 		D10000000000000000000004 /* Products */ = {
 			isa = PBXGroup;
 			children = (
 				B10000000000000000000012 /* Fitness.app */,
+				B20000000000000000000002 /* FitnessTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -138,6 +174,24 @@
 			productReference = B10000000000000000000012 /* Fitness.app */;
 			productType = "com.apple.product-type.application";
 		};
+		E20000000000000000000001 /* FitnessTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = F10000000000000000000003 /* Build configuration list for PBXNativeTarget "FitnessTests" */;
+			buildPhases = (
+				C20000000000000000000003 /* Sources */,
+				C20000000000000000000001 /* Frameworks */,
+				C20000000000000000000002 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				H20000000000000000000001 /* PBXTargetDependency */,
+			);
+			name = FitnessTests;
+			productName = FitnessTests;
+			productReference = B20000000000000000000002 /* FitnessTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -150,6 +204,10 @@
 				TargetAttributes = {
 					E10000000000000000000001 = {
 						CreatedOnToolsVersion = 27.0;
+					};
+					E20000000000000000000001 = {
+						CreatedOnToolsVersion = 27.0;
+						TestTargetID = E10000000000000000000001;
 					};
 				};
 			};
@@ -168,6 +226,7 @@
 			projectRoot = "";
 			targets = (
 				E10000000000000000000001 /* Fitness */,
+				E20000000000000000000001 /* FitnessTests */,
 			);
 		};
 /* End PBXProject section */
@@ -180,6 +239,14 @@
 				A1000000000000000000000D /* Assets.xcassets in Resources */,
 				A10000000000000000000016 /* Localizable.xcstrings in Resources */,
 				A10000000000000000000017 /* InfoPlist.xcstrings in Resources */,
+				A10000000000000000000018 /* PrivacyInfo.xcprivacy in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C20000000000000000000002 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -204,10 +271,27 @@
 				A10000000000000000000013 /* OutdoorRunSupport.swift in Sources */,
 				A10000000000000000000014 /* AnalyticsComponents.swift in Sources */,
 				A10000000000000000000015 /* Localization.swift in Sources */,
+				A10000000000000000000019 /* HeartRateZoneAnalytics.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C20000000000000000000003 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A20000000000000000000001 /* ProductionSafetyTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		H20000000000000000000001 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = E10000000000000000000001 /* Fitness */;
+			targetProxy = G20000000000000000000001 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		F20000000000000000000001 /* Debug */ = {
@@ -270,7 +354,7 @@
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_STRICT_CONCURRENCY = minimal;
+				SWIFT_STRICT_CONCURRENCY = complete;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = 1;
 			};
@@ -293,9 +377,43 @@
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_STRICT_CONCURRENCY = minimal;
+				SWIFT_STRICT_CONCURRENCY = complete;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
+		F20000000000000000000005 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 27.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.shibx.FitnessTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Fitness.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Fitness";
+			};
+			name = Debug;
+		};
+		F20000000000000000000006 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 27.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.shibx.FitnessTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Fitness.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Fitness";
 			};
 			name = Release;
 		};
@@ -316,6 +434,15 @@
 			buildConfigurations = (
 				F20000000000000000000003 /* Debug */,
 				F20000000000000000000004 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		F10000000000000000000003 /* Build configuration list for PBXNativeTarget "FitnessTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F20000000000000000000005 /* Debug */,
+				F20000000000000000000006 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

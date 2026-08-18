@@ -16,13 +16,15 @@ struct OutdoorRunAnalyticsView: View {
     }
 
     var body: some View {
+        let selectedRuns = filteredRuns
         ScrollView {
             LazyVStack(spacing: 16) {
-                WeeklyRunSummaryView(runs: filteredRuns)
-                HeartRateZonesCardView(runs: filteredRuns)
-                PaceCardView(splits: filteredRuns.splits)
-                RunningEfficiencyCardView(runs: filteredRuns)
-                CadenceCardView(runs: filteredRuns)
+                WeeklyRunSummaryView(runs: selectedRuns)
+                HeartRateZonesCardView(runs: selectedRuns)
+                LatestRunVitalsCardView(runs: selectedRuns)
+                PaceCardView(splits: selectedRuns.splits)
+                RunningEfficiencyCardView(runs: selectedRuns)
+                CadenceCardView(runs: selectedRuns)
             }
             .padding()
         }
@@ -47,7 +49,10 @@ struct OutdoorRunAnalyticsView: View {
             RunFilterView(runs: runs, includedRunIDs: $includedRunIDs)
         }
         .onAppear {
-            saveSelection()
+            RunSelectionPreferences.saveSelectedRunIDs(
+                includedRunIDs,
+                availableRunIDs: allRunIDs
+            )
         }
         .onChange(of: allRunIDs) { previousRunIDs, currentRunIDs in
             let newlyAvailableRunIDs = currentRunIDs.subtracting(previousRunIDs)
@@ -72,13 +77,6 @@ struct OutdoorRunAnalyticsView: View {
         Set(runs.map(\.id))
     }
 
-    private func saveSelection(availableRunIDs: Set<UUID>? = nil) {
-        RunSelectionPreferences.saveSelectedRunIDs(
-            includedRunIDs,
-            availableRunIDs: availableRunIDs ?? allRunIDs
-        )
-    }
-
     private var filteredRuns: [OutdoorRun] {
         runs.filter { includedRunIDs.contains($0.id) }
     }
@@ -86,6 +84,8 @@ struct OutdoorRunAnalyticsView: View {
 
 private struct WeeklyRunSummaryView: View {
     let runs: [OutdoorRun]
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @Environment(\.accessibilityDifferentiateWithoutColor) private var differentiateWithoutColor
     @State private var selectedWeekOffset: Int? = 0
     @State private var isWeekCalendarScrolling = false
 
@@ -122,13 +122,54 @@ private struct WeeklyRunSummaryView: View {
         weeklyRuns.reduce(0) { $0 + $1.distanceKm }
     }
 
+    private var totalDistanceKilometers: Double {
+        runs.reduce(0) { $0 + $1.distanceKm }
+    }
+
     private var durationSeconds: TimeInterval {
         weeklyRuns.reduce(0) { $0 + $1.duration }
     }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            HStack(alignment: .top, spacing: 28) {
+            Group {
+                if dynamicTypeSize.isAccessibilitySize {
+                    VStack(alignment: .leading, spacing: 14) {
+                        weeklyMetrics
+                    }
+                } else {
+                    ViewThatFits(in: .horizontal) {
+                        HStack(alignment: .top, spacing: 28) {
+                            weeklyMetrics
+                        }
+                        VStack(alignment: .leading, spacing: 14) {
+                            weeklyMetrics
+                        }
+                    }
+                }
+            }
+            .padding(.horizontal, 4)
+
+            weekCalendar
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.top, 6)
+        .padding(.bottom, 4)
+    }
+
+    @ViewBuilder
+    private var weeklyMetrics: some View {
+                metric(
+                    title: L10n.string("全部跑量"),
+                    value: totalDistanceKilometers.formatted(
+                        .number.precision(.fractionLength(1)).locale(.autoupdatingCurrent)
+                    ),
+                    unit: L10n.string("公里"),
+                    accessibilityValue: L10n.string(
+                        "\(totalDistanceKilometers, format: .number.precision(.fractionLength(1))) 公里"
+                    )
+                )
+
                 metric(
                     title: weeklyDistanceTitle,
                     value: distanceKilometers.formatted(
@@ -146,14 +187,6 @@ private struct WeeklyRunSummaryView: View {
                     unit: durationUnit,
                     accessibilityValue: durationAccessibilityValue
                 )
-            }
-            .padding(.horizontal, 4)
-
-            weekCalendar
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.top, 6)
-        .padding(.bottom, 4)
     }
 
     private var weekCalendar: some View {
@@ -220,15 +253,21 @@ private struct WeeklyRunSummaryView: View {
                 }
 
                 VStack {
-                    Text(date, format: .dateTime.day())
+                    Text(verbatim: String(calendar.component(.day, from: date)))
                         .font(.subheadline.weight(.semibold))
                         .monospacedDigit()
-                        .foregroundStyle(hasRun ? Color.white : Color.primary)
+                        .foregroundStyle(hasRun ? Color.black : Color.primary)
                         .frame(width: 38, height: 38)
                         .background(
                             hasRun ? Color.orange : Color(.systemGray5),
                             in: Circle()
                         )
+                        .overlay {
+                            if hasRun, differentiateWithoutColor {
+                                Circle()
+                                    .strokeBorder(Color.primary, lineWidth: 2)
+                            }
+                        }
                 }
                 .frame(maxWidth: .infinity)
                 .accessibilityElement(children: .ignore)
@@ -305,7 +344,13 @@ private struct RunFilterView: View {
     let runs: [OutdoorRun]
     @Binding var includedRunIDs: Set<UUID>
     @Environment(\.dismiss) private var dismiss
-    @State private var exportURL: URL?
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @EnvironmentObject private var store: HealthDataStore
+    @State private var exportArtifact: ExportArtifact?
+    @State private var exportedFileURL: URL?
+    @State private var exportTask: Task<Void, Never>?
+    @State private var isExporting = false
+    @State private var exportErrorMessage: String?
 
     var body: some View {
         NavigationStack {
@@ -314,37 +359,31 @@ private struct RunFilterView: View {
                     Button {
                         toggle(run.id)
                     } label: {
-                        HStack(spacing: 10) {
-                            Image(systemName: includedRunIDs.contains(run.id)
-                                ? "checkmark.circle.fill"
-                                : "circle")
-                                .font(.title3)
-                                .foregroundStyle(includedRunIDs.contains(run.id)
-                                    ? Color.blue
-                                    : Color(.systemGray3))
-                                .frame(width: 24)
-
-                            Text(MetricFormatter.date(run.startDate))
-                                .frame(maxWidth: .infinity, alignment: .leading)
-
-                            Text(duration(run.duration))
-                                .monospacedDigit()
-                                .frame(maxWidth: .infinity, alignment: .center)
-
-                            Text(distance(run.distanceKm))
-                                .monospacedDigit()
-                                .frame(maxWidth: .infinity, alignment: .trailing)
+                        Group {
+                            if dynamicTypeSize.isAccessibilitySize {
+                                runSelectionRow(run, vertical: true)
+                            } else {
+                                ViewThatFits(in: .horizontal) {
+                                    runSelectionRow(run, vertical: false)
+                                    runSelectionRow(run, vertical: true)
+                                }
+                            }
                         }
-                        .font(.subheadline)
-                        .foregroundStyle(.primary)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.8)
+                        .frame(minHeight: 44)
                         .contentShape(Rectangle())
+                        .accessibilityElement(children: .ignore)
+                        .accessibilityLabel(runAccessibilityLabel(run))
+                        .accessibilityValue(
+                            includedRunIDs.contains(run.id) ? "已选择" : "未选择"
+                        )
                     }
                     .buttonStyle(.plain)
                 }
             }
             .listStyle(.insetGrouped)
+            .refreshable {
+                await store.refresh()
+            }
             .scrollEdgeEffectHidden(true, for: .top)
             .navigationTitle("选择跑步数据")
             .navigationBarTitleDisplayMode(.inline)
@@ -370,45 +409,85 @@ private struct RunFilterView: View {
                     .tint(.blue)
                     .disabled(runs.isEmpty)
 
-                    if let exportURL {
-                        ShareLink(item: exportURL, subject: Text("户外跑步数据")) {
+                    Button(action: exportSelectedRuns) {
+                        if isExporting {
+                            ProgressView()
+                                .accessibilityLabel("正在导出跑步数据")
+                        } else {
                             Label("分享", systemImage: "square.and.arrow.up")
                         }
-                        .tint(.blue)
-                    } else {
-                        Button {} label: {
-                            Label("分享", systemImage: "square.and.arrow.up")
-                        }
-                        .disabled(true)
                     }
+                    .tint(.blue)
+                    .disabled(isExporting || includedRunIDs.isEmpty)
                 }
             }
         }
-        .task(id: selectionToken) {
-            if let exportURL {
-                try? FileManager.default.removeItem(at: exportURL)
-            }
-            exportURL = nil
-            let selectedRuns = runs.filter { includedRunIDs.contains($0.id) }
-            guard !selectedRuns.isEmpty else { return }
-            let task = Task.detached { () -> URL? in
-                try? OutdoorRunCSVExporter.export(selectedRuns)
-            }
-            let url = await task.value
-            guard !Task.isCancelled else {
-                if let url { try? FileManager.default.removeItem(at: url) }
-                return
-            }
-            exportURL = url
+        .sheet(item: $exportArtifact, onDismiss: removeExportFile) { artifact in
+            ActivityView(activityItems: [artifact.url])
+                .ignoresSafeArea()
         }
+        .alert("无法导出跑步数据", isPresented: Binding(
+            get: { exportErrorMessage != nil },
+            set: { if !$0 { exportErrorMessage = nil } }
+        )) {
+            Button("好", role: .cancel) {}
+        } message: {
+            Text(exportErrorMessage ?? "")
+        }
+        .onDisappear {
+            exportTask?.cancel()
+            removeExportFile()
+        }
+    }
+
+    @ViewBuilder
+    private func runSelectionRow(_ run: OutdoorRun, vertical: Bool) -> some View {
+        let selection = Image(systemName: includedRunIDs.contains(run.id)
+            ? "checkmark.circle.fill"
+            : "circle")
+            .font(.title3)
+            .foregroundStyle(includedRunIDs.contains(run.id)
+                ? Color.blue
+                : Color(.systemGray3))
+            .frame(width: 24)
+
+        if vertical {
+            HStack(alignment: .top, spacing: 10) {
+                selection
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(MetricFormatter.date(run.startDate))
+                    Text("\(duration(run.duration)) · \(distance(run.distanceKm))")
+                        .foregroundStyle(.secondary)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .font(.subheadline)
+            .foregroundStyle(.primary)
+        } else {
+            HStack(spacing: 10) {
+                selection
+                Text(MetricFormatter.date(run.startDate))
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                Text(duration(run.duration))
+                    .monospacedDigit()
+                    .frame(maxWidth: .infinity, alignment: .center)
+                Text(distance(run.distanceKm))
+                    .monospacedDigit()
+                    .frame(maxWidth: .infinity, alignment: .trailing)
+            }
+            .font(.subheadline)
+            .foregroundStyle(.primary)
+            .lineLimit(1)
+            .minimumScaleFactor(0.8)
+        }
+    }
+
+    private func runAccessibilityLabel(_ run: OutdoorRun) -> String {
+        "\(MetricFormatter.date(run.startDate))，\(duration(run.duration))，\(distance(run.distanceKm))"
     }
 
     private var allRunsSelected: Bool {
         !runs.isEmpty && includedRunIDs.count == runs.count
-    }
-
-    private var selectionToken: String {
-        includedRunIDs.map(\.uuidString).sorted().joined(separator: ",")
     }
 
     private func toggle(_ id: UUID) {
@@ -432,5 +511,51 @@ private struct RunFilterView: View {
             return L10n.string("\(hours)时\(minutes)分\(seconds)秒")
         }
         return L10n.string("\(minutes)分\(seconds)秒")
+    }
+
+    private func exportSelectedRuns() {
+        let selectedRuns = runs.filter { includedRunIDs.contains($0.id) }
+        guard !selectedRuns.isEmpty else { return }
+        exportTask?.cancel()
+        removeExportFile()
+        isExporting = true
+
+        exportTask = Task {
+            do {
+                let healthData = try await store.exportData(
+                    for: Set(selectedRuns.map(\.id))
+                )
+                try Task.checkCancellation()
+                let url = try await withThrowingTaskGroup(of: URL.self) { group in
+                    group.addTask(priority: .userInitiated) {
+                        try OutdoorRunCSVExporter.export(
+                            selectedRuns,
+                            healthData: healthData
+                        )
+                    }
+                    guard let url = try await group.next() else {
+                        throw CancellationError()
+                    }
+                    return url
+                }
+                exportedFileURL = url
+                try Task.checkCancellation()
+                exportArtifact = ExportArtifact(url: url)
+            } catch is CancellationError {
+                removeExportFile()
+            } catch {
+                removeExportFile()
+                exportErrorMessage = L10n.string("请稍后重试。")
+            }
+            isExporting = false
+        }
+    }
+
+    private func removeExportFile() {
+        if let exportedFileURL {
+            try? FileManager.default.removeItem(at: exportedFileURL)
+        }
+        exportedFileURL = nil
+        exportArtifact = nil
     }
 }
